@@ -162,6 +162,40 @@ export const App: React.FC = () => {
   const renderActiveToolComponent = () => {
     switch (selectedToolId) {
       case 'prompt-studio': return <PromptStudio />;
+
+  // Sync URL hash with active tool
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && TOOLS.some(t => t.id === hash)) {
+        setSelectedToolId(hash);
+      } else if (!hash) {
+        setSelectedToolId(null);
+      }
+    };
+
+    // On initial mount
+    handleHashChange();
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Update document title and URL hash on selection
+  React.useEffect(() => {
+    if (activeTool) {
+      document.title = `${activeTool.title} | Mantra Tools`;
+      if (window.location.hash !== `#${activeTool.id}`) {
+        window.history.pushState(null, '', `#${activeTool.id}`);
+      }
+    } else {
+      document.title = 'Mantra Tools | Free Client-Side Micro SaaS Suite (tools.mantralabs.web.id)';
+      if (window.location.hash) {
+        window.history.pushState(null, '', window.location.pathname);
+      }
+    }
+  }, [selectedToolId, activeTool]);
+
       case 'microstock-keywords': return <MicrostockKeywords />;
       case 'subtitle-cleaner': return <SubtitleCleaner />;
       case 'safe-zone-overlay': return <SafeZoneOverlay />;

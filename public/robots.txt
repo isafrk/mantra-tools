@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tools.mantralabs.web.id/sitemap.xml
+Host: https://tools.mantralabs.web.id
