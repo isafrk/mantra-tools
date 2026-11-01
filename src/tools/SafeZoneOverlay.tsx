@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Smartphone, Eye, Upload, ShieldAlert } from 'lucide-react';
+import { Smartphone, Eye, Upload, ShieldAlert, Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 
 type AspectRatio = '9:16' | '16:9' | '1:1' | '4:5';
 type OverlayPlatform = 'tiktok' | 'shorts' | 'reels' | 'grid' | 'none';
@@ -7,17 +7,33 @@ type OverlayPlatform = 'tiktok' | 'shorts' | 'reels' | 'grid' | 'none';
 export const SafeZoneOverlay: React.FC = () => {
   const [aspect, setAspect] = useState<AspectRatio>('9:16');
   const [platform, setPlatform] = useState<OverlayPlatform>('tiktok');
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [mediaSrc, setMediaSrc] = useState<string | null>(null);
+  const [isVideo, setIsVideo] = useState<boolean>(false);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [isMuted, setIsMuted] = useState<boolean>(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImageSrc(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      const isVid = file.type.startsWith('video/');
+      setIsVideo(isVid);
+      const url = URL.createObjectURL(file);
+      setMediaSrc(url);
+      setIsPlaying(true);
+    }
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -42,14 +58,14 @@ export const SafeZoneOverlay: React.FC = () => {
             <h2 className="text-xl font-bold text-white tracking-wide">Social Safe-Zone & Aspect Simulator</h2>
           </div>
           <p className="text-sm text-slate-400 mt-1">
-            Test video and image framing against TikTok, Instagram Reels, and YouTube Shorts UI occlusion zones.
+            Test video and image framing against TikTok, Instagram Reels, and YouTube Shorts UI occlusion zones. Supports live video playback.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <input
             type="file"
             ref={fileInputRef}
-            accept="image/*"
+            accept="image/*,video/*"
             onChange={handleFileUpload}
             className="hidden"
           />
@@ -58,14 +74,19 @@ export const SafeZoneOverlay: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 transition"
           >
             <Upload className="w-3.5 h-3.5" />
-            Upload Test Media
+            Upload Video / Image
           </button>
-          <button
-            onClick={() => setImageSrc(null)}
-            className="px-3 py-1.5 text-xs font-mono rounded-lg bg-[#1a1e2b] hover:bg-[#252b3d] text-slate-400 hover:text-slate-200 border border-[#262c3e] transition"
-          >
-            Clear Media
-          </button>
+          {mediaSrc && (
+            <button
+              onClick={() => {
+                setMediaSrc(null);
+                setIsVideo(false);
+              }}
+              className="px-3 py-1.5 text-xs font-mono rounded-lg bg-[#1a1e2b] hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-[#262c3e] transition"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
@@ -125,29 +146,82 @@ export const SafeZoneOverlay: React.FC = () => {
             </div>
           </div>
 
+          {/* Video Player Controls (If Video) */}
+          {isVideo && (
+            <div className="bg-[#12141c] border border-[#1e2230] rounded-xl p-4 space-y-3">
+              <label className="text-xs font-mono uppercase text-slate-400 block">Video Controls</label>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={togglePlay}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a1e2b] hover:bg-[#252b3d] text-slate-200 text-xs font-mono border border-[#262c3e]"
+                >
+                  {isPlaying ? <Pause className="w-3.5 h-3.5 text-cyan-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+                  <span>{isPlaying ? 'Pause' : 'Play'}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = 0;
+                      videoRef.current.play();
+                      setIsPlaying(true);
+                    }
+                  }}
+                  className="p-1.5 rounded-lg bg-[#1a1e2b] text-slate-300 border border-[#262c3e]"
+                  title="Rewind"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => {
+                    if (videoRef.current) {
+                      videoRef.current.muted = !isMuted;
+                      setIsMuted(!isMuted);
+                    }
+                  }}
+                  className="p-1.5 rounded-lg bg-[#1a1e2b] text-slate-300 border border-[#262c3e]"
+                  title="Toggle Mute"
+                >
+                  {isMuted ? <VolumeX className="w-3.5 h-3.5 text-amber-400" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Info note */}
           <div className="bg-[#12141c] border border-[#1e2230] rounded-xl p-4 text-xs text-slate-400 space-y-2">
             <div className="flex items-center gap-1.5 text-amber-400 font-mono font-medium">
               <ShieldAlert className="w-4 h-4" />
-              Creator Safety Note
+              Occlusion Hazard Guide
             </div>
-            <p>
-              Keep all critical typography, branding logos, and subtitles within the bright center region.
-              The shaded red regions show where user interface elements (like, share, comments, profile title) obscure content.
+            <p className="leading-relaxed">
+              Keep critical subtitles, face focus points, and product graphics inside the unshaded middle viewport.
+              The red tinted zones represent user interface overlays that permanently hide pixels on mobile apps.
             </p>
           </div>
         </div>
 
         {/* Right Canvas Preview */}
-        <div className="lg:col-span-8 flex flex-col items-center justify-center bg-[#090a0f] border border-[#1e2230] rounded-xl p-6 min-h-[600px] overflow-hidden">
+        <div className="lg:col-span-8 flex flex-col items-center justify-center bg-[#090a0f] border border-[#1e2230] rounded-xl p-6 min-h-[620px] overflow-hidden">
           <div className={`relative ${getContainerStyles()} border-2 border-dashed border-[#2b3245] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 flex items-center justify-center bg-[#0d0f17]`}>
             {/* Background Media */}
-            {imageSrc ? (
-              <img src={imageSrc} alt="Preview Target" className="w-full h-full object-cover" />
+            {mediaSrc ? (
+              isVideo ? (
+                <video
+                  ref={videoRef}
+                  src={mediaSrc}
+                  autoPlay
+                  loop
+                  muted={isMuted}
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <img src={mediaSrc} alt="Preview Target" className="w-full h-full object-cover" />
+              )
             ) : (
-              <div className="text-center p-6 space-y-2">
+              <div className="text-center p-6 space-y-2 select-none">
                 <Smartphone className="w-10 h-10 text-slate-600 mx-auto" />
-                <p className="text-xs font-mono text-slate-500">Drop media or click Upload Test Media</p>
+                <p className="text-xs font-mono text-slate-500">Drop MP4 video or JPG/PNG image</p>
                 <p className="text-[10px] font-mono text-slate-600">Simulating {aspect} canvas</p>
               </div>
             )}
@@ -170,13 +244,11 @@ export const SafeZoneOverlay: React.FC = () => {
             {/* TikTok Overlay Mask */}
             {platform === 'tiktok' && aspect === '9:16' && (
               <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4">
-                {/* Top bar danger */}
                 <div className="w-full h-12 bg-red-500/20 border-b border-red-500/40 rounded flex items-center justify-between px-3 text-[10px] font-mono text-red-300">
                   <span>LIVE / Following / For You</span>
                   <span>Search</span>
                 </div>
 
-                {/* Right action buttons danger */}
                 <div className="absolute right-3 bottom-24 flex flex-col items-center gap-3.5">
                   <div className="w-9 h-9 rounded-full bg-red-500/30 border border-red-400 flex items-center justify-center text-[9px] text-red-200">Avatar</div>
                   <div className="w-8 h-8 rounded-full bg-red-500/30 border border-red-400 flex items-center justify-center text-[9px] text-red-200">Like</div>
@@ -186,7 +258,6 @@ export const SafeZoneOverlay: React.FC = () => {
                   <div className="w-8 h-8 rounded-full bg-red-500/30 border border-red-400 flex items-center justify-center text-[8px] text-red-200">Audio</div>
                 </div>
 
-                {/* Bottom caption & navigation danger */}
                 <div className="w-[75%] bg-red-500/20 border border-red-500/40 rounded p-2 text-[10px] font-mono text-red-300 space-y-1">
                   <div className="font-bold">@creator_handle</div>
                   <div className="truncate">Caption description and trending hashtags...</div>

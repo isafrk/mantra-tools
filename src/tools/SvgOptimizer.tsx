@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Code, Copy, Check } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Code, Copy, Check, Upload, Download } from 'lucide-react';
 
 export const SvgOptimizer: React.FC = () => {
   const [svgInput, setSvgInput] = useState<string>(
@@ -12,6 +12,18 @@ export const SvgOptimizer: React.FC = () => {
   );
 
   const [copiedMode, setCopiedMode] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setSvgInput(event.target?.result as string || '');
+      };
+      reader.readAsText(file);
+    }
+  };
 
   // Minify SVG
   const optimizeSvg = (raw: string): string => {
@@ -32,11 +44,14 @@ export const SvgOptimizer: React.FC = () => {
       .replace(/stroke-width/g, 'strokeWidth')
       .replace(/stroke-linecap/g, 'strokeLinecap')
       .replace(/stroke-linejoin/g, 'strokeLinejoin')
+      .replace(/stroke-miterlimit/g, 'strokeMiterlimit')
       .replace(/fill-rule/g, 'fillRule')
       .replace(/clip-rule/g, 'clipRule')
+      .replace(/stop-color/g, 'stopColor')
+      .replace(/stop-opacity/g, 'stopOpacity')
       .replace(/class=/g, 'className=');
 
-    return `import React from 'react';\n\nexport const Icon = (props: React.SVGProps<SVGSVGElement>) => (\n  ${jsx}\n);`;
+    return `import React from 'react';\n\nexport const Icon = (props: React.SVGProps<SVGSVGElement>) => (\n  ${jsx}\n);\n\nexport default Icon;`;
   };
 
   // CSS Data URI
@@ -53,29 +68,45 @@ export const SvgOptimizer: React.FC = () => {
     setTimeout(() => setCopiedMode(null), 2000);
   };
 
+  const downloadSvgFile = () => {
+    const blob = new Blob([minified], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'optimized_mantra_vector.svg';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const exportPng = (scale: number) => {
     const canvas = document.createElement('canvas');
     const img = new Image();
     const svgBlob = new Blob([svgInput], { type: 'image/svg+xml;charset=utf-8' });
-    const URL = window.URL || window.webkitURL || window;
-    const blobURL = URL.createObjectURL(svgBlob);
+    const URLObj = window.URL || window.webkitURL || window;
+    const blobURL = URLObj.createObjectURL(svgBlob);
 
     img.onload = () => {
-      canvas.width = (img.width || 300) * scale;
-      canvas.height = (img.height || 300) * scale;
+      const w = img.width || 300;
+      const h = img.height || 300;
+      canvas.width = w * scale;
+      canvas.height = h * scale;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         const pngUrl = canvas.toDataURL('image/png');
         const a = document.createElement('a');
         a.href = pngUrl;
-        a.download = `mantra_svg_${scale}x.png`;
+        a.download = `mantra_vector_${canvas.width}x${canvas.height}.png`;
         a.click();
       }
-      URL.revokeObjectURL(blobURL);
+      URLObj.revokeObjectURL(blobURL);
     };
     img.src = blobURL;
   };
+
+  const origBytes = new Blob([svgInput]).size;
+  const optBytes = new Blob([minified]).size;
+  const savedPercent = Math.max(0, Math.round(((origBytes - optBytes) / origBytes) * 100));
 
   return (
     <div className="space-y-6">
@@ -92,15 +123,48 @@ export const SvgOptimizer: React.FC = () => {
             Clean, minify, convert SVG into React components, CSS Data URIs, or export high-res PNG.
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept=".svg"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 transition"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            Upload .SVG File
+          </button>
+          <button
+            onClick={downloadSvgFile}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg bg-[#1a1e2b] hover:bg-[#252b3d] text-slate-200 border border-[#262c3e] transition"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Save .SVG
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Editor & Preview */}
         <div className="lg:col-span-6 space-y-4">
           <div className="bg-[#12141c] border border-[#1e2230] rounded-xl p-4">
-            <label className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2 block">
-              SVG Code Input
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-mono uppercase tracking-wider text-slate-400">
+                SVG Raw Source Code
+              </label>
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className="text-slate-500">{origBytes} B → {optBytes} B</span>
+                {savedPercent > 0 && (
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">
+                    -{savedPercent}%
+                  </span>
+                )}
+              </div>
+            </div>
             <textarea
               value={svgInput}
               onChange={(e) => setSvgInput(e.target.value)}
@@ -111,8 +175,8 @@ export const SvgOptimizer: React.FC = () => {
 
           {/* Live Preview Canvas */}
           <div className="bg-[#12141c] border border-[#1e2230] rounded-xl p-4 space-y-3">
-            <span className="text-xs font-mono uppercase text-slate-400 block">Render Preview</span>
-            <div className="h-48 rounded-lg bg-[#090a0f] border border-[#1e2230] flex items-center justify-center p-4 overflow-hidden relative"
+            <span className="text-xs font-mono uppercase text-slate-400 block">Render Canvas</span>
+            <div className="h-44 rounded-lg bg-[#090a0f] border border-[#1e2230] flex items-center justify-center p-4 overflow-hidden relative"
                  dangerouslySetInnerHTML={{ __html: svgInput }}
             />
             

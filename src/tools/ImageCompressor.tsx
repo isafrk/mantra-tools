@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Upload, Download, ArrowRight, Zap, RefreshCw } from 'lucide-react';
+import { Upload, Download, ArrowRight, Zap, RefreshCw, Archive, Trash2 } from 'lucide-react';
+import JSZip from 'jszip';
 
 interface ProcessedFile {
   id: string;
@@ -11,6 +12,7 @@ interface ProcessedFile {
   newWidth: number;
   newHeight: number;
   dataUrl: string;
+  blob: Blob;
 }
 
 export const ImageCompressor: React.FC = () => {
@@ -18,6 +20,7 @@ export const ImageCompressor: React.FC = () => {
   const [format, setFormat] = useState<'image/webp' | 'image/jpeg' | 'image/png'>('image/webp');
   const [maxDimension, setMaxDimension] = useState<number>(0); // 0 = original
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isZipping, setIsZipping] = useState<boolean>(false);
   const [results, setResults] = useState<ProcessedFile[]>([]);
 
   const formatBytes = (bytes: number) => {
@@ -57,26 +60,30 @@ export const ImageCompressor: React.FC = () => {
           }
 
           ctx.drawImage(img, 0, 0, targetW, targetH);
-          const dataUrl = canvas.toDataURL(format, quality / 100);
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject('Blob generation failed');
+              return;
+            }
 
-          // Approximate size from base64 length
-          const head = dataUrl.indexOf(',') + 1;
-          const newSize = Math.round((dataUrl.length - head) * 0.75);
+            const dataUrl = canvas.toDataURL(format, quality / 100);
+            const ext = format === 'image/webp' ? '.webp' : format === 'image/jpeg' ? '.jpg' : '.png';
+            const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+            const newName = `${baseName}_compressed${ext}`;
 
-          const ext = format === 'image/webp' ? '.webp' : format === 'image/jpeg' ? '.jpg' : '.png';
-          const newName = file.name.substring(0, file.name.lastIndexOf('.')) + '_compressed' + ext;
-
-          resolve({
-            id: Math.random().toString(36).substring(7),
-            name: newName,
-            origSize: file.size,
-            newSize,
-            origWidth: img.width,
-            origHeight: img.height,
-            newWidth: targetW,
-            newHeight: targetH,
-            dataUrl
-          });
+            resolve({
+              id: Math.random().toString(36).substring(7),
+              name: newName,
+              origSize: file.size,
+              newSize: blob.size,
+              origWidth: img.width,
+              origHeight: img.height,
+              newWidth: targetW,
+              newHeight: targetH,
+              dataUrl,
+              blob
+            });
+          }, format, quality / 100);
         };
         img.onerror = () => reject('Failed to load image');
         img.src = e.target?.result as string;
@@ -106,6 +113,27 @@ export const ImageCompressor: React.FC = () => {
     setIsProcessing(false);
   };
 
+  const downloadAllZip = async () => {
+    if (results.length === 0) return;
+    setIsZipping(true);
+    const zip = new JSZip();
+
+    for (const item of results) {
+      zip.file(item.name, item.blob);
+    }
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mantra_compressed_${results.length}_images.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setIsZipping(false);
+  };
+
+  const totalSavedBytes = results.reduce((acc, curr) => acc + Math.max(0, curr.origSize - curr.newSize), 0);
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
@@ -122,12 +150,23 @@ export const ImageCompressor: React.FC = () => {
           </p>
         </div>
         {results.length > 0 && (
-          <button
-            onClick={() => setResults([])}
-            className="px-3 py-1.5 text-xs font-mono rounded-lg bg-[#1a1e2b] hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-[#262c3e] transition"
-          >
-            Clear All Results
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={downloadAllZip}
+              disabled={isZipping}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition disabled:opacity-50"
+            >
+              <Archive className="w-3.5 h-3.5" />
+              <span>{isZipping ? 'Archiving...' : `Download All ZIP (${results.length})`}</span>
+            </button>
+            <button
+              onClick={() => setResults([])}
+              className="p-1.5 rounded-lg bg-[#1a1e2b] hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-[#262c3e] transition"
+              title="Clear results"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -149,7 +188,7 @@ export const ImageCompressor: React.FC = () => {
                 max="100"
                 value={quality}
                 onChange={(e) => setQuality(Number(e.target.value))}
-                className="w-full accent-emerald-400"
+                className="w-full accent-emerald-400 cursor-pointer"
               />
             </div>
 
@@ -158,9 +197,9 @@ export const ImageCompressor: React.FC = () => {
               <label className="text-xs font-mono uppercase text-slate-400 block mb-1.5">Output Format</label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'image/webp', label: 'WebP (Best)' },
-                  { id: 'image/jpeg', label: 'JPEG' },
-                  { id: 'image/png', label: 'PNG' },
+                  { id: 'image/webp', label: 'WebP (Smallest)' },
+                  { id: 'image/jpeg', label: 'JPEG (Photo)' },
+                  { id: 'image/png', label: 'PNG (Sharp)' },
                 ].map((f) => (
                   <button
                     key={f.id}
@@ -171,7 +210,7 @@ export const ImageCompressor: React.FC = () => {
                         : 'bg-[#090a0f] border-[#1e2230] text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    {f.label}
+                    {f.label.split(' ')[0]}
                   </button>
                 ))}
               </div>
@@ -187,11 +226,24 @@ export const ImageCompressor: React.FC = () => {
               >
                 <option value={0}>Original Resolution (No Resize)</option>
                 <option value={3840}>4K Ultra HD (Max 3840px)</option>
-                <option value={1920}>Full HD (Max 1920px)</option>
-                <option value={1280}>HD Ready (Max 1280px)</option>
+                <option value={1920}>Full HD 1080p (Max 1920px)</option>
+                <option value={1280}>HD Ready 720p (Max 1280px)</option>
                 <option value={800}>Web Thumbnail (Max 800px)</option>
               </select>
             </div>
+
+            {results.length > 0 && (
+              <div className="pt-2 border-t border-[#1e2230] text-xs font-mono text-slate-400 space-y-1">
+                <div className="flex justify-between">
+                  <span>Batch Processed:</span>
+                  <span className="text-slate-200 font-bold">{results.length} files</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Bandwidth Saved:</span>
+                  <span className="text-emerald-400 font-bold">{formatBytes(totalSavedBytes)}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

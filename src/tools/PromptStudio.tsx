@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { Copy, Check, Sparkles, Trash2, Download, Layers } from 'lucide-react';
+import { Copy, Check, Sparkles, Trash2, Download, Layers, Wand2 } from 'lucide-react';
+
+const STYLE_PRESETS = [
+  { name: 'Cinematic 8K', prefix: 'Cinematic wide angle still,', suffix: 'shot on 35mm lens, volumetric lighting, photorealistic, 8k resolution' },
+  { name: 'Dark Cyberpunk', prefix: 'Cyberpunk dystopian scene,', suffix: 'neon reflections in wet pavement, volumetric fog, octane render, unreal engine 5' },
+  { name: 'Analog Film', prefix: 'Vintage 1970s film photograph,', suffix: 'Kodak Portra 400 grain, warm cinematic color grading, raw candid' },
+  { name: 'Isometric 3D', prefix: 'Low-poly isometric 3D diorama of', suffix: 'clean pastel lighting, soft shadows, blender render, trending on artstation' },
+  { name: 'Macro Biological', prefix: 'Hyper-detailed macro closeup shot of', suffix: 'focus stacking, delicate organic textures, soft rim lighting, national geographic' },
+];
 
 export const PromptStudio: React.FC = () => {
   const [input, setInput] = useState<string>('');
@@ -39,6 +47,11 @@ export const PromptStudio: React.FC = () => {
   for (let i = 0; i < uniquePrompts.length; i += chunkSize) {
     batches.push(uniquePrompts.slice(i, i + chunkSize));
   }
+
+  const applyPreset = (preset: typeof STYLE_PRESETS[0]) => {
+    setPrefix(preset.prefix);
+    setSuffix(preset.suffix);
+  };
 
   const handleCopyBatch = (batchIdx: number, text: string) => {
     navigator.clipboard.writeText(text);
@@ -81,9 +94,9 @@ export const PromptStudio: React.FC = () => {
           <button
             onClick={() => {
               setInput(
-                "1. cinematic wide shot of cybernetic shaman meditating in rain, neon cables\n" +
+                "1. cybernetic shaman meditating inside bioluminescent rain forest, floating neon glyphs\n" +
                 "2. retro-futuristic arcade in Tokyo year 2088, volumetric fog, Kodak Portra\n" +
-                "3. hyper-detailed macro shot of biomechanical dragonfly wing, gold leaf\n" +
+                "3. hyper-detailed macro shot of biomechanical dragonfly wing, gold leaf inlays\n" +
                 "4. brutalist concrete monolith rising out of misty black ocean, moody overcast"
               );
             }}
@@ -92,7 +105,11 @@ export const PromptStudio: React.FC = () => {
             Load Sample
           </button>
           <button
-            onClick={() => setInput('')}
+            onClick={() => {
+              setInput('');
+              setPrefix('');
+              setSuffix('');
+            }}
             className="p-1.5 rounded-lg bg-[#1a1e2b] hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-[#262c3e] transition"
             title="Clear all"
           >
@@ -117,9 +134,28 @@ export const PromptStudio: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Paste your raw prompts here...\n1. Cyberpunk street market\n2. Moody atmospheric interior\n3. Vintage astronaut portrait"
-              rows={12}
+              rows={10}
               className="w-full bg-[#090a0f] border border-[#1e2230] rounded-lg p-3 text-sm font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 resize-y"
             />
+          </div>
+
+          {/* Quick Style Presets */}
+          <div className="bg-[#12141c] border border-[#1e2230] rounded-xl p-4">
+            <div className="flex items-center gap-1.5 mb-2 text-xs font-mono uppercase text-slate-400">
+              <Wand2 className="w-3.5 h-3.5 text-cyan-400" />
+              Quick Style Preset Injectors
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {STYLE_PRESETS.map((p, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => applyPreset(p)}
+                  className="px-2.5 py-1 text-xs font-mono rounded-lg bg-[#090a0f] hover:bg-[#1a1e2b] text-slate-300 border border-[#1e2230] hover:border-cyan-500/40 transition"
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Parameter Injectors */}
@@ -273,7 +309,7 @@ export const PromptStudio: React.FC = () => {
           <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
             {batches.length === 0 ? (
               <div className="bg-[#12141c] border border-[#1e2230] rounded-xl p-8 text-center text-slate-500 text-sm">
-                No prompts to display. Paste raw lines on the left.
+                No prompts to display. Paste raw lines on the left or click Load Sample.
               </div>
             ) : (
               batches.map((batch, idx) => {

@@ -26,6 +26,8 @@ export const SlugCaseEngine: React.FC = () => {
   const sentenceCase = words.length > 0 ? (words.join(' ').charAt(0).toUpperCase() + words.join(' ').slice(1).toLowerCase()) : '';
   const dotCase = words.map(w => w.toLowerCase()).join('.');
   const pathCase = words.map(w => w.toLowerCase()).join('/');
+  const urlEncoded = encodeURIComponent(input);
+  const reversed = input.split('').reverse().join('');
 
   const formats = [
     { key: 'slug', label: 'URL Kebab Slug', value: kebabSlug, desc: 'Clean SEO friendly URL' },
@@ -37,6 +39,8 @@ export const SlugCaseEngine: React.FC = () => {
     { key: 'sentence', label: 'Sentence case', value: sentenceCase, desc: 'Standard readable UI sentences' },
     { key: 'dot', label: 'dot.case', value: dotCase, desc: 'Package namespaces & metric tags' },
     { key: 'path', label: 'path/case', value: pathCase, desc: 'Folder routing & directory pathing' },
+    { key: 'url', label: 'URL Encoded', value: urlEncoded, desc: 'Safe for query parameters' },
+    { key: 'rev', label: 'Reverse String', value: reversed, desc: 'Inverted character order' },
   ];
 
   const handleCopy = (key: string, val: string) => {

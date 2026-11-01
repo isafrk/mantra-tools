@@ -10,6 +10,7 @@ interface IconSpec {
 const ICON_SPECS: IconSpec[] = [
   { name: 'favicon-16x16.png', size: 16 },
   { name: 'favicon-32x32.png', size: 32 },
+  { name: 'favicon-48x48.png', size: 48 },
   { name: 'apple-touch-icon.png', size: 180 },
   { name: 'android-chrome-192x192.png', size: 192 },
   { name: 'android-chrome-512x512.png', size: 512 },
@@ -17,6 +18,8 @@ const ICON_SPECS: IconSpec[] = [
 
 export const FaviconGenerator: React.FC = () => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [appName, setAppName] = useState<string>('My Web App');
+  const [themeColor, setThemeColor] = useState<string>('#090a0f');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [downloadReady, setDownloadReady] = useState<boolean>(false);
   const [copiedHtml, setCopiedHtml] = useState<boolean>(false);
@@ -58,7 +61,7 @@ export const FaviconGenerator: React.FC = () => {
         const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
         zip.file(spec.name, base64Data, { base64: true });
         
-        // Also make favicon.ico from the 32x32 canvas
+        // Also make favicon.ico from 32x32
         if (spec.size === 32) {
           zip.file('favicon.ico', base64Data, { base64: true });
         }
@@ -67,24 +70,35 @@ export const FaviconGenerator: React.FC = () => {
 
     // Add site.webmanifest
     const webmanifest = {
-      name: "Mantra Web App",
-      short_name: "MantraApp",
+      name: appName,
+      short_name: appName.split(' ')[0],
       icons: [
         { src: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
         { src: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" }
       ],
-      theme_color: "#090a0f",
-      background_color: "#090a0f",
+      theme_color: themeColor,
+      background_color: themeColor,
       display: "standalone"
     };
     zip.file('site.webmanifest', JSON.stringify(webmanifest, null, 2));
+
+    // Add browserconfig.xml for Windows Metro
+    const browserconfig = `<?xml version="1.0" encoding="utf-8"?>
+<browserconfig>
+  <msapplication>
+    <smalltile src="/favicon-32x32.png"/>
+    <square150x150logo src="/android-chrome-192x192.png"/>
+    <TileColor>${themeColor}</TileColor>
+  </msapplication>
+</browserconfig>`;
+    zip.file('browserconfig.xml', browserconfig);
 
     // Generate zip blob
     const content = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(content);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'mantra_favicon_pack.zip';
+    link.download = `favicon_package_${appName.toLowerCase().replace(/\s+/g, '_')}.zip`;
     link.click();
     URL.revokeObjectURL(url);
 
@@ -95,7 +109,8 @@ export const FaviconGenerator: React.FC = () => {
 `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="manifest" href="/site.webmanifest">`;
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="${themeColor}">`;
 
   return (
     <div className="space-y-6">
@@ -115,7 +130,7 @@ export const FaviconGenerator: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Upload and preview */}
+        {/* Left: Upload and settings */}
         <div className="lg:col-span-5 space-y-4">
           <input
             type="file"
@@ -132,15 +147,45 @@ export const FaviconGenerator: React.FC = () => {
             {imageSrc ? (
               <div className="space-y-3">
                 <img src={imageSrc} alt="Favicon Source" className="w-24 h-24 object-contain mx-auto rounded-xl border border-[#1e2230] bg-[#12141c]" />
-                <p className="text-xs font-mono text-pink-400">Click to replace source logo</p>
+                <p className="text-xs font-mono text-pink-400">Click to change master icon</p>
               </div>
             ) : (
               <div>
                 <Upload className="w-10 h-10 text-slate-600 group-hover:text-pink-400 mx-auto mb-2 transition" />
-                <p className="text-sm font-medium text-slate-300">Drop your master logo (512x512+ recommended)</p>
-                <p className="text-xs font-mono text-slate-500 mt-1">PNG, JPG, SVG, WebP</p>
+                <p className="text-sm font-medium text-slate-300">Drop your logo (512x512+ PNG/SVG)</p>
+                <p className="text-xs font-mono text-slate-500 mt-1">Generates complete PWA + browser suite</p>
               </div>
             )}
+          </div>
+
+          {/* App Config */}
+          <div className="bg-[#12141c] border border-[#1e2230] rounded-xl p-4 space-y-3">
+            <div>
+              <label className="text-xs font-mono uppercase text-slate-400 block mb-1">PWA App Name</label>
+              <input
+                type="text"
+                value={appName}
+                onChange={(e) => setAppName(e.target.value)}
+                className="w-full bg-[#090a0f] border border-[#1e2230] rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-mono uppercase text-slate-400 block mb-1">Theme / Tile Color</label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={themeColor}
+                  onChange={(e) => setThemeColor(e.target.value)}
+                  className="w-8 h-8 rounded border border-[#1e2230] bg-transparent cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={themeColor}
+                  onChange={(e) => setThemeColor(e.target.value)}
+                  className="flex-1 bg-[#090a0f] border border-[#1e2230] rounded-lg px-3 py-1.5 text-xs font-mono text-slate-200 focus:outline-none"
+                />
+              </div>
+            </div>
           </div>
 
           {downloadReady && (
@@ -152,12 +197,12 @@ export const FaviconGenerator: React.FC = () => {
               {isGenerating ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Building Favicon ZIP...
+                  Building Multi-Size ZIP...
                 </>
               ) : (
                 <>
                   <Download className="w-4 h-4" />
-                  Download Full Favicon Pack (.ZIP)
+                  Download Complete Favicon Pack (.ZIP)
                 </>
               )}
             </button>
@@ -190,8 +235,16 @@ export const FaviconGenerator: React.FC = () => {
                 <span className="text-[10px] text-slate-500">Android PWA</span>
               </div>
               <div className="p-2.5 rounded-lg bg-[#090a0f] border border-[#1e2230]">
+                <span className="text-pink-400 font-bold block">chrome-512x512</span>
+                <span className="text-[10px] text-slate-500">Splash screen</span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-[#090a0f] border border-[#1e2230]">
                 <span className="text-pink-400 font-bold block">site.webmanifest</span>
                 <span className="text-[10px] text-slate-500">PWA Manifest JSON</span>
+              </div>
+              <div className="p-2.5 rounded-lg bg-[#090a0f] border border-[#1e2230]">
+                <span className="text-pink-400 font-bold block">browserconfig.xml</span>
+                <span className="text-[10px] text-slate-500">Windows Metro Tiles</span>
               </div>
             </div>
           </div>
