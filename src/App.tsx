@@ -159,10 +159,6 @@ export const App: React.FC = () => {
     ? TOOLS
     : TOOLS.filter(t => t.category === currentCategory);
 
-  const renderActiveToolComponent = () => {
-    switch (selectedToolId) {
-      case 'prompt-studio': return <PromptStudio />;
-
   // Sync URL hash with active tool
   React.useEffect(() => {
     const handleHashChange = () => {
@@ -196,6 +192,9 @@ export const App: React.FC = () => {
     }
   }, [selectedToolId, activeTool]);
 
+  const renderActiveToolComponent = () => {
+    switch (selectedToolId) {
+      case 'prompt-studio': return <PromptStudio />;
       case 'microstock-keywords': return <MicrostockKeywords />;
       case 'subtitle-cleaner': return <SubtitleCleaner />;
       case 'safe-zone-overlay': return <SafeZoneOverlay />;
@@ -332,21 +331,25 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#181b24] bg-[#07080b] py-6 px-4 lg:px-6 mt-12">
+      <footer className="border-t border-[#181b24] bg-[#07080b] py-8 px-4 lg:px-6 mt-12">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-slate-300">MANTRA LABS</span>
             <span>•</span>
             <span>tools.mantralabs.web.id</span>
             <span>•</span>
-            <span>Client-Side Micro SaaS Suite</span>
+            <span className="text-emerald-400">100% Client-Side Engine</span>
           </div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span>Free Forever</span>
+          <div className="flex flex-wrap items-center gap-4 text-slate-400">
+            <a href="https://mantralabs.web.id" target="_blank" rel="noopener" className="hover:text-cyan-400 transition">Studio</a>
+            <span>•</span>
+            <a href="https://downtik.web.id" target="_blank" rel="noopener" className="hover:text-lime-400 transition">DownTik</a>
+            <span>•</span>
+            <a href="https://gameonradar.online" target="_blank" rel="noopener" className="hover:text-sky-400 transition">GameOnRadar</a>
             <span>•</span>
             <span>Zero Tracking</span>
             <span>•</span>
-            <span>MIT License</span>
+            <span>Free Forever</span>
           </div>
         </div>
       </footer>
