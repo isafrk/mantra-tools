@@ -4,7 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { ToolCard } from './components/ToolCard';
 import { SearchModal } from './components/SearchModal';
 import type { ToolItem, ToolCategory } from './types';
-import { ArrowLeft, Zap } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 // Import all 12 Tools
 import { PromptStudio } from './tools/PromptStudio';
@@ -254,35 +254,27 @@ export const App: React.FC = () => {
           ) : (
             <div className="space-y-8 animate-in fade-in duration-200">
               {/* Hero Banner */}
-              <div className="relative rounded-3xl bg-gradient-to-br from-[#12141e] via-[#0d0f17] to-[#12141c] border border-[#1e2230] p-6 lg:p-8 overflow-hidden shadow-2xl">
-                {/* Tech background grid / glows */}
-                <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
-                <div className="absolute bottom-0 left-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
-
-                <div className="relative z-10 max-w-2xl space-y-3">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-mono">
-                    <Zap className="w-3.5 h-3.5" />
-                    <span>Sovereign Client-Side Micro SaaS Suite</span>
-                  </div>
-                  <h1 className="text-2xl lg:text-4xl font-extrabold text-white tracking-tight font-mono">
-                    High-Octane Web Utilities For <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400">Creators & Engineers</span>
+              <div className="relative rounded-3xl bg-[#0b0d14] border border-[#1a1e2b] p-6 lg:p-8 overflow-hidden shadow-2xl">
+                <div className="relative z-10 max-w-3xl space-y-4">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight font-display leading-tight">
+                    Client-Side Micro Utilities for <span className="text-cyan-400">Creators</span> &amp; <span className="text-emerald-400">Engineers</span>
                   </h1>
-                  <p className="text-sm text-slate-400 leading-relaxed">
-                    12 high-performance micro-tools running directly in your browser. Zero backend telemetry, zero data storage, 100% private and forever free.
+                  <p className="text-sm text-slate-400 leading-relaxed max-w-2xl font-sans">
+                    12 sovereign, browser-native micro-tools engineered for high-velocity workflows. All compute runs strictly inside your local runtime — zero server telemetry, zero storage, and forever free.
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-3 pt-2 text-xs font-mono">
-                    <div className="px-3 py-1.5 rounded-lg bg-[#08090d] border border-[#1e2230] text-slate-300 flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center gap-3 pt-1 text-xs font-mono">
+                    <div className="px-3 py-1.5 rounded-xl bg-[#07080b] border border-[#181b26] text-slate-300 flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
-                      12 Micro-Tools
+                      <span>12 Autonomous Tools</span>
                     </div>
-                    <div className="px-3 py-1.5 rounded-lg bg-[#08090d] border border-[#1e2230] text-slate-300 flex items-center gap-1.5">
+                    <div className="px-3 py-1.5 rounded-xl bg-[#07080b] border border-[#181b26] text-slate-300 flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                      100% Local Execution
+                      <span>100% In-Browser Sandbox</span>
                     </div>
-                    <div className="px-3 py-1.5 rounded-lg bg-[#08090d] border border-[#1e2230] text-slate-300 flex items-center gap-1.5">
+                    <div className="px-3 py-1.5 rounded-xl bg-[#07080b] border border-[#181b26] text-slate-300 flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-purple-400"></span>
-                      Zero Cloud Footprint
+                      <span>Zero Cloud Storage</span>
                     </div>
                   </div>
                 </div>
